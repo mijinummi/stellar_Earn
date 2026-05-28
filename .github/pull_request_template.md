@@ -33,6 +33,24 @@ Closes #<!-- issue number -->
 
 ---
 
+## Contract Changelog Discipline
+
+> **Required for changes under `contracts/earn-quest/src/**` or any contract storage, event, or interface change.**
+
+- [ ] No contract implementation changes - not applicable
+- [ ] Updated `contracts/earn-quest/CHANGELOG.md` under `## [Unreleased]`
+- [ ] If breaking, added a `### Breaking Changes` entry with impact, affected files, and migration steps
+- [ ] If breaking, used Conventional Commit breaking metadata (`type(scope)!:`) in the PR title or commit history
+- [ ] If breaking, included a `BREAKING CHANGE:` explanation below
+
+**BREAKING CHANGE details (required for breaking contract changes):**
+
+```text
+BREAKING CHANGE:
+```
+
+---
+
 ## Test Evidence
 
 > **Required:** All PRs must include test evidence. PRs missing this section will be blocked from merging.
@@ -58,7 +76,7 @@ Closes #<!-- issue number -->
 
 | Method | Endpoint | Expected | Result |
 |--------|----------|----------|--------|
-| `GET`  | `/api/…` |  200 OK  |   [x]   |
+| `GET`  | `/api/...` | 200 OK | [x] |
 
 ---
 
@@ -66,7 +84,7 @@ Closes #<!-- issue number -->
 
 > **Required for any endpoint changes.**
 
-- [ ] No API changes — Swagger update not applicable
+- [ ] No API changes - Swagger update not applicable
 - [ ] New endpoints documented with `@ApiOperation`, `@ApiResponse`, and `@ApiBearerAuth` decorators
 - [ ] Updated DTOs annotated with `@ApiProperty` / `@ApiPropertyOptional`
 - [ ] Swagger UI verified locally at `/api/docs` and responses are accurate
@@ -90,33 +108,33 @@ Closes #<!-- issue number -->
 - [ ] All incoming request bodies and query params have a corresponding DTO
 - [ ] DTOs use `class-validator` decorators (`@IsString`, `@IsUUID`, `@IsNotEmpty`, `@IsOptional`, etc.)
 - [ ] `class-transformer` decorators applied where necessary (`@Transform`, `@Type`, `@Expose`)
-- [ ] `ValidationPipe` is applied globally or at the controller level — raw unvalidated input is never used
+- [ ] `ValidationPipe` is applied globally or at the controller level - raw unvalidated input is never used
 
 ### Guards & Authorization
 
 - [ ] Endpoints requiring authentication are protected with `@UseGuards(JwtAuthGuard)` or equivalent
 - [ ] Admin-only endpoints use the appropriate admin guard / role check
 - [ ] Public endpoints are explicitly marked with `@Public()` decorator where applicable
-- [ ] Throttler guard behaviour verified — rate limits are not unintentionally bypassed
+- [ ] Throttler guard behaviour verified - rate limits are not unintentionally bypassed
 
 ### Logging
 
 - [ ] Significant operations and state transitions are logged using the project's Winston logger (`LoggerService`)
 - [ ] Errors are logged at `error` level with stack traces
 - [ ] No sensitive data (passwords, secrets, private keys, tokens) is included in log output
-- [ ] Incoming request / response logging is handled by the global `LoggerMiddleware` — no duplicate logs added
+- [ ] Incoming request / response logging is handled by the global `LoggerMiddleware` - no duplicate logs added
 
 ### Stellar / Soroban Contract Interactions
 
 - [ ] Contract calls wrapped in try/catch with descriptive error messages
-- [ ] Horizon / Soroban RPC failures do not crash the service — fallback or retry logic applied where appropriate
-- [ ] Transaction signing uses environment-provided keys only — no hardcoded secrets
+- [ ] Horizon / Soroban RPC failures do not crash the service - fallback or retry logic applied where appropriate
+- [ ] Transaction signing uses environment-provided keys only - no hardcoded secrets
 
 ---
 
 ## Database / Migration
 
-- [ ] No database changes — not applicable
+- [ ] No database changes - not applicable
 - [ ] TypeORM migration created and tested (`npm run typeorm:generate-migration`)
 - [ ] Migration is reversible (down migration implemented)
 - [ ] Seed data updated if required (`seed.ts`)
@@ -150,7 +168,7 @@ Closes #<!-- issue number -->
 - [ ] No hardcoded secrets, API keys, or environment-specific values in source code
 - [ ] `.env.example` updated if new environment variables were introduced
 - [ ] `ReadMe Backend.md` or `ReadMe Frontend.md` updated if setup steps changed
-- [ ] Self-review completed — I have read through every line of the diff
+- [ ] Self-review completed - I have read through every line of the diff
 
 ---
 

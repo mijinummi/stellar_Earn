@@ -393,6 +393,11 @@ describe('QuestsService', () => {
 - Never expose raw contract errors to API consumers — translate them in the NestJS service layer
 - Soroban RPC calls must be async and non-blocking to the main request thread (use BullMQ jobs)
 
+- Changes to `contracts/earn-quest/src/**` must update [contracts/earn-quest/CHANGELOG.md](contracts/earn-quest/CHANGELOG.md)
+- Contract-breaking changes must use Conventional Commit breaking metadata (`type(scope)!:`) and a `BREAKING CHANGE:` explanation
+- Contract-breaking changelog entries must live under `## [Unreleased]` -> `### Breaking Changes` and include impact, affected files, and migration steps
+- See [contracts/earn-quest/docs/CHANGELOG_DISCIPLINE.md](contracts/earn-quest/docs/CHANGELOG_DISCIPLINE.md) for the full policy and CI-enforced expectations
+
 ---
 
 ## 8. Reviewer Checklist
