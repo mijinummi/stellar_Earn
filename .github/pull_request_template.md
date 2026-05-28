@@ -123,6 +123,24 @@ Closes #<!-- issue number -->
 
 ---
 
+---
+
+## Breaking Type / Model Changes (Frontend — FE-068)
+
+> Required if your PR modifies any file under `FrontEnd/my-app/lib/types/**`,
+> `FrontEnd/my-app/lib/api/**`, `FrontEnd/my-app/lib/schemas/**`,
+> `FrontEnd/my-app/lib/validation/**`, or `FrontEnd/my-app/context/walletTypes.ts`.
+>
+> Full policy: [`FrontEnd/my-app/docs/TYPE_CHANGES_POLICY.md`](../FrontEnd/my-app/docs/TYPE_CHANGES_POLICY.md)
+
+- [ ] My PR touches **none** of the watched type/model paths — not applicable.
+- [ ] I classified my change as: ☐ `breaking-types` ☐ `breaking-runtime` ☐ `added` ☐ `changed` ☐ `deprecated` ☐ `removed` ☐ `fixed` ☐ `security`
+- [ ] I added a bullet to `## [Unreleased]` in [`FrontEnd/my-app/CHANGELOG.md`](../FrontEnd/my-app/CHANGELOG.md) **OR** a new file in [`FrontEnd/my-app/.changeset/`](../FrontEnd/my-app/.changeset/README.md).
+- [ ] If breaking, my entry includes a before/after `Migration:` code block.
+- [ ] `cd FrontEnd/my-app && npm run changelog:check` passes locally.
+- [ ] If I am asserting this change is non-breaking despite touching a watched file, I added the `changelog-skip` label or `[changelog-skip]` to the PR title.
+
+
 ## Final Pre-Merge Checklist
 
 - [ ] Branch is up to date with `main` / `master`

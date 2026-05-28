@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "changelog:check": "node scripts/check-changelog.mjs",
+    "changelog:check:staged": "node scripts/check-changelog.mjs --staged"
   },
   "dependencies": {
     "@creit.tech/stellar-wallets-kit": "^1.9.5",
