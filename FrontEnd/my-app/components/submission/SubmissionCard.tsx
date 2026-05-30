@@ -1,40 +1,24 @@
 'use client';
 
+import { memo } from 'react';
 import { StatusBadge } from './StatusBadge';
 import type { Submission } from '@/lib/types/submission';
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) return 'just now';
-  if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-  }
-  if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  }
-  if (diffInSeconds < 604800) {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} day${days > 1 ? 's' : ''} ago`;
-  }
-  return date.toLocaleDateString();
-}
+import { formatRelativeDate } from '@/lib/utils/date';
 
 interface SubmissionCardProps {
   submission: Submission;
   onClick?: (submission: Submission) => void;
 }
 
-export function SubmissionCard({ submission, onClick }: SubmissionCardProps) {
+export const SubmissionCard = memo(function SubmissionCard({
+  submission,
+  onClick,
+}: SubmissionCardProps) {
   const handleClick = () => {
     onClick?.(submission);
   };
 
-  const formattedDate = formatDate(submission.createdAt);
+  const formattedDate = formatRelativeDate(submission.createdAt);
 
   return (
     <div
@@ -72,4 +56,6 @@ export function SubmissionCard({ submission, onClick }: SubmissionCardProps) {
       </div>
     </div>
   );
-}
+});
+
+SubmissionCard.displayName = 'SubmissionCard';

@@ -1,7 +1,11 @@
 import {
   Controller,
   Get,
+  Post,
+  Delete,
   Query,
+  Body,
+  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -12,6 +16,8 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiParam,
+  ApiBody,
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -40,7 +46,7 @@ import { Submission } from './entities/submission.entity';
 @ApiTags('Analytics')
 @Controller('analytics')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(Role.ADMIN)
 @ApiBearerAuth()
 @RateLimit({ limit: 30, ttlSeconds: 60 })
 export class AnalyticsController {

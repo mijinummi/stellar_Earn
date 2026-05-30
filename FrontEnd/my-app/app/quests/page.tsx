@@ -1,44 +1,48 @@
-"use client";
+'use client';
 
-import { useState, Suspense, useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { SearchBar } from "@/components/ui/SearchBar";
-import { FilterPanel } from "@/components/quest/FilterPanel";
-import { QuestList } from "@/components/quest/QuestList";
-import { Pagination } from "@/components/ui/Pagination";
-import { mockQuests } from "@/lib/mock/quests";
-import { QuestStatus, QuestDifficulty } from "@/lib/types/quest";
-import type { Quest } from "@/lib/types/quest";
-import { AppLayout } from "@/components/layout/AppLayout";
-import LazyLoad from "@/components/ui/LazyLoad";
+import { useState, Suspense, useMemo, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { SearchBar } from '@/components/ui/SearchBar';
+import { FilterPanel } from '@/components/quest/FilterPanel';
+import { QuestList } from '@/components/quest/QuestList';
+import { OfflineIndicator } from '@/components/quest/OfflineIndicator';
+import { Pagination } from '@/components/ui/Pagination';
+import { mockQuests } from '@/lib/mock/quests';
+import { QuestStatus, QuestDifficulty } from '@/lib/types/quest';
+import type { Quest } from '@/lib/types/quest';
+import LazyLoad from '@/components/ui/LazyLoad';
+import { ComponentErrorBoundary } from '@/components/error/ErrorBoundary';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { useOnlineStatus } from '@/lib/hooks/useOnlineStatus';
 
 function QuestsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const { isOnline } = useOnlineStatus();
 
   // Get filters from URL params
-  const statusParam = searchParams.get("status");
+  const statusParam = searchParams.get('status');
   const statusFilter =
     statusParam &&
-      Object.values(QuestStatus).includes(statusParam as QuestStatus)
+    Object.values(QuestStatus).includes(statusParam as QuestStatus)
       ? (statusParam as QuestStatus)
       : undefined;
 
-  const difficultyParam = searchParams.get("difficulty");
+  const difficultyParam = searchParams.get('difficulty');
   const difficultyFilter =
     difficultyParam &&
-      Object.values(QuestDifficulty).includes(difficultyParam as QuestDifficulty)
+    Object.values(QuestDifficulty).includes(difficultyParam as QuestDifficulty)
       ? (difficultyParam as QuestDifficulty)
       : undefined;
 
-  const categoryParam = searchParams.get("category");
+  const categoryParam = searchParams.get('category');
   const categoryFilter = categoryParam || undefined;
 
   // Get page from URL params
-  const pageParam = searchParams.get("page");
+  const pageParam = searchParams.get('page');
   const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
   const limit = 12;
 
@@ -67,7 +71,7 @@ function QuestsContent() {
       filtered = filtered.filter(
         (q) =>
           q.title.toLowerCase().includes(query) ||
-          q.description.toLowerCase().includes(query),
+          q.description.toLowerCase().includes(query)
       );
     }
 
@@ -91,57 +95,94 @@ function QuestsContent() {
   );
 
   // Update URL when filters change
-  const updateURL = (updates: Record<string, string | null>) => {
-    const params = new URLSearchParams(searchParams.toString());
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-    });
-    params.set("page", "1"); // Reset to first page when filters change
-    router.push(`/quests?${params.toString()}`);
-  };
+  const updateURL = useCallback(
+    (updates: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value) {
+          params.set(key, value);
+        } else {
+          params.delete(key);
+        }
+      });
+      params.set('page', '1'); // Reset to first page when filters change
+      router.push(`/quests?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
 
-  const handleStatusChange = (status: QuestStatus | undefined) => {
-    updateURL({ status: status || null });
-  };
+  const handleStatusChange = useCallback(
+    (status: QuestStatus | undefined) => {
+      updateURL({ status: status || null });
+    },
+    [updateURL]
+  );
 
-  const handleDifficultyChange = (difficulty: QuestDifficulty | undefined) => {
-    updateURL({ difficulty: difficulty || null });
-  };
+  const handleDifficultyChange = useCallback(
+    (difficulty: QuestDifficulty | undefined) => {
+      updateURL({ difficulty: difficulty || null });
+    },
+    [updateURL]
+  );
 
-  const handleCategoryChange = (category: string | undefined) => {
-    updateURL({ category: category || null });
-  };
+  const handleCategoryChange = useCallback(
+    (category: string | undefined) => {
+      updateURL({ category: category || null });
+    },
+    [updateURL]
+  );
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    updateURL({ search: query || null });
-  };
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      updateURL({ search: query || null });
+    },
+    [updateURL]
+  );
 
-  const handleClearFilters = () => {
-    setSearchQuery("");
-    router.push("/quests");
-  };
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('');
+    router.push('/quests');
+  }, [router]);
 
   // Update URL when page changes
-  const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", page.toString());
-    router.push(`/quests?${params.toString()}`);
-  };
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('page', page.toString());
+      router.push(`/quests?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
 
-  const handleQuestClick = (quest: Quest) => {
-    router.push(`/quests/${quest.id}`);
-  };
+  const handleQuestClick = useCallback(
+    (quest: Quest) => {
+      router.push(`/quests/${quest.id}`);
+    },
+    [router]
+  );
+
+  // Retry handler for reloading quests when coming back online
+  const handleRetry = useCallback(async () => {
+    // In a real app, this would refetch from the API
+    // For now, just a no-op since we're using mock data
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }, []);
 
   return (
     <AppLayout>
+      {/* Offline Indicator */}
+      <OfflineIndicator
+        isOffline={!isOnline}
+        message="You appear to be offline. Quest data may not load properly."
+      />
+
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Header content */}
-        <div className="mb-6 flex items-center justify-between lg:mb-8" data-onboarding="quest-board-header">
+        <div
+          className="mb-6 flex items-center justify-between lg:mb-8"
+          data-onboarding="quest-board-header"
+        >
           <div>
             <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
               Quest Board
@@ -172,41 +213,46 @@ function QuestsContent() {
         </div>
 
         {/* Search and Filter Section */}
-        <div
-          className="mb-6 space-y-4 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
-          data-onboarding="quest-board-filters"
-        >
-          <div className=" lg:max-w-md">
-            <SearchBar
-              onSearch={handleSearch}
-              placeholder="Search quests..."
-              defaultValue={searchQuery}
-            />
-          </div>
-          <FilterPanel
-            selectedStatus={statusFilter}
-            selectedDifficulty={difficultyFilter}
-            selectedCategory={categoryFilter}
-            onStatusChange={handleStatusChange}
-            onDifficultyChange={handleDifficultyChange}
-            onCategoryChange={handleCategoryChange}
-            onClearFilters={handleClearFilters}
-          />
-        </div>
-
-        {/* Quest List */}
-        <div className="mb-6" data-onboarding="quest-board-list">
-          <LazyLoad>
-            <QuestList
-              quests={paginatedQuests}
-              isLoading={false}
-              error={null}
-              onQuestClick={handleQuestClick}
-              hasActiveFilters={hasActiveFilters}
+        <ComponentErrorBoundary componentName="SearchAndFilters">
+          <div
+            className="mb-6 space-y-4 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+            data-onboarding="quest-board-filters"
+          >
+            <div className=" lg:max-w-md">
+              <SearchBar
+                onSearch={handleSearch}
+                placeholder="Search quests..."
+                defaultValue={searchQuery}
+              />
+            </div>
+            <FilterPanel
+              selectedStatus={statusFilter}
+              selectedDifficulty={difficultyFilter}
+              selectedCategory={categoryFilter}
+              onStatusChange={handleStatusChange}
+              onDifficultyChange={handleDifficultyChange}
+              onCategoryChange={handleCategoryChange}
               onClearFilters={handleClearFilters}
             />
-          </LazyLoad>
-        </div>
+          </div>
+        </ComponentErrorBoundary>
+
+        {/* Quest List */}
+        <ComponentErrorBoundary componentName="QuestList">
+          <div className="mb-6" data-onboarding="quest-board-list">
+            <LazyLoad>
+              <QuestList
+                quests={paginatedQuests}
+                isLoading={false}
+                error={null}
+                onQuestClick={handleQuestClick}
+                hasActiveFilters={hasActiveFilters}
+                onClearFilters={handleClearFilters}
+                onRetry={handleRetry}
+              />
+            </LazyLoad>
+          </div>
+        </ComponentErrorBoundary>
 
         {/* Pagination logic */}
         {totalPages > 1 && (

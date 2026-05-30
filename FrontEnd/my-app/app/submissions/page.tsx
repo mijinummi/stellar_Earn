@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense, useMemo } from 'react';
+import { useState, Suspense, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { StatusFilter } from '@/components/submission/StatusFilter';
@@ -52,8 +52,7 @@ function SubmissionsContent() {
       filtered = filtered.filter(
         (s) =>
           s.id.toLowerCase().includes(query) ||
-          s.quest.title.toLowerCase().includes(query) ||
-          s.quest.description.toLowerCase().includes(query),
+          (s.quest?.title.toLowerCase().includes(query) ?? false)
       );
     }
 
@@ -71,48 +70,60 @@ function SubmissionsContent() {
   const hasMore = currentPage < totalPages;
 
   // Update URL when filter changes
-  const handleStatusChange = (status: SubmissionStatus | undefined) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (status) {
-      params.set('status', status);
-    } else {
-      params.delete('status');
-    }
-    params.set('page', '1'); // Reset to first page when filter changes
-    router.push(`/submissions?${params.toString()}`);
-  };
+  const handleStatusChange = useCallback(
+    (status: SubmissionStatus | undefined) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (status) {
+        params.set('status', status);
+      } else {
+        params.delete('status');
+      }
+      params.set('page', '1'); // Reset to first page when filter changes
+      router.push(`/submissions?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
 
   // Update URL when page changes
-  const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('page', page.toString());
-    router.push(`/submissions?${params.toString()}`);
-  };
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('page', page.toString());
+      router.push(`/submissions?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    // Reset to first page on search
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('page', '1');
-    router.push(`/submissions?${params.toString()}`);
-  };
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      // Reset to first page on search
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('page', '1');
+      router.push(`/submissions?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
 
-  const handleSubmissionClick = (submission: Submission) => {
+  const handleSubmissionClick = useCallback((submission: Submission) => {
     setSelectedSubmission(submission);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     // Clear selected submission after animation
     setTimeout(() => setSelectedSubmission(null), 300);
-  };
+  }, []);
 
   return (
     <AppLayout>
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-6 lg:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" data-onboarding="submissions-header">
+        {/* Header */}
+        <div
+          className="mb-6 lg:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+          data-onboarding="submissions-header"
+        >
           <div>
             <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
               Submissions
@@ -125,8 +136,18 @@ function SubmissionsContent() {
             onClick={() => setIsSubmissionFormOpen(true)}
             className="inline-flex items-center gap-2 rounded-lg bg-[#089ec3] px-4 py-2 font-medium text-white hover:bg-[#0ab8d4] focus:outline-none focus:ring-2 focus:ring-[#089ec3] focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             New Submission
           </button>
@@ -234,21 +255,21 @@ export default function SubmissionsPage() {
       fallback={
         <AppLayout>
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
-                  Submissions
-                </h1>
-              </div>
-              <div className="animate-pulse space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-32 rounded-lg bg-zinc-200 dark:bg-zinc-800"
-                  />
-                ))}
-              </div>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">
+                Submissions
+              </h1>
             </div>
-          </AppLayout>
+            <div className="animate-pulse space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-32 rounded-lg bg-zinc-200 dark:bg-zinc-800"
+                />
+              ))}
+            </div>
+          </div>
+        </AppLayout>
       }
     >
       <SubmissionsContent />

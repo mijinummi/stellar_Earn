@@ -115,6 +115,18 @@ pnpm build
 pnpm start
 ```
 
+### Bundle Analysis
+
+To analyze the route-level code splitting and identify the largest chunks in the production build:
+
+```bash
+# Run the bundle analyzer
+pnpm analyze
+# or
+npm run analyze
+```
+This will open the bundle analyzer reports in your browser to help you inspect chunk sizes.
+
 ## Key Components
 
 ### Wallet Integration
@@ -234,17 +246,19 @@ export function useWallet() {
 
 ```bash
 # Run unit tests
-pnpm test
+npm test
 
 # Run tests in watch mode
-pnpm test:watch
+npm run test:watch
 
-# Run integration tests
-pnpm test:integration
+# Run Playwright coverage-independent browser tests
+npm exec playwright test
 
 # Check test coverage
-pnpm test:coverage
+npm run test:coverage
 ```
+
+Coverage reports are written to `FrontEnd/my-app/coverage/` with `text`, `html`, `lcov`, and `json-summary` outputs. The baseline thresholds are enforced in `FrontEnd/my-app/vitest.config.ts` so regressions surface in CI and local runs.
 
 ## Linting & Type Checking
 

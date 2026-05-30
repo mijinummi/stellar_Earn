@@ -1,21 +1,32 @@
-"use client";
+'use client';
 
 import React, { useEffect } from 'react';
-import { measureFCP, measureTTFB, reportWebVitals } from '@/lib/utils/performance';
+import {
+  measureFCP,
+  measureTTFB,
+  reportWebVitals,
+  trackPerformance,
+} from '@/lib/utils/performance';
 
 const PerformanceMonitor: React.FC = () => {
-    useEffect(() => {
-        // Basic measurements
-        measureTTFB();
-        measureFCP();
+  useEffect(() => {
+    // Basic measurements
+    measureTTFB();
+    measureFCP();
 
-        // Advanced web vitals
-        reportWebVitals((metric) => {
-            console.log(`[Web Vital] ${metric.name}:`, metric.value);
-        });
-    }, []);
+    // Advanced web vitals
+    reportWebVitals((metric) => {
+      trackPerformance(metric.name, metric.value, {
+        id: metric.id,
+        delta: metric.delta,
+        rating: metric.rating,
+        href: metric.href,
+        entries: metric.entries,
+      });
+    });
+  }, []);
 
-    return null; // This component doesn't render anything
+  return null; // This component doesn't render anything
 };
 
 export default PerformanceMonitor;

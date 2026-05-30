@@ -1,23 +1,13 @@
 'use client';
 
+import { memo } from 'react';
 import { StatusBadge } from './StatusBadge';
 import type { Submission } from '@/lib/types/submission';
+import { formatShortDate } from '@/lib/utils/date';
 
 interface SubmissionsTableProps {
   submissions: Submission[];
   onSubmissionClick?: (submission: Submission) => void;
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleString('en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'UTC',
-  });
 }
 
 function truncateHash(hash: string, length = 8): string {
@@ -33,7 +23,7 @@ function getProofDisplay(proof: Record<string, unknown>): string {
   return 'View';
 }
 
-export function SubmissionsTable({
+export const SubmissionsTable = memo(function SubmissionsTable({
   submissions,
   onSubmissionClick,
 }: SubmissionsTableProps) {
@@ -98,14 +88,14 @@ export function SubmissionsTable({
                   {submission.quest.title}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
-                  {formatDate(submission.createdAt)}
+                  {formatShortDate(submission.createdAt)}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm">
                   <StatusBadge status={submission.status} />
                 </td>
                 <td
                   className={`whitespace-nowrap px-6 py-4 text-sm font-medium ${
-                    submission.quest.rewardAmount > 0
+                    Number(submission.quest.rewardAmount) > 0
                       ? 'text-orange-600 dark:text-orange-400'
                       : 'text-zinc-500 dark:text-zinc-400'
                   }`}
@@ -141,4 +131,6 @@ export function SubmissionsTable({
       </table>
     </div>
   );
-}
+});
+
+SubmissionsTable.displayName = 'SubmissionsTable';
