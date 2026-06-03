@@ -5,7 +5,10 @@ interface RequirementsListProps {
   description: string;
 }
 
-export function RequirementsList({ requirements, description }: RequirementsListProps) {
+export function RequirementsList({
+  requirements,
+  description,
+}: RequirementsListProps) {
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
       <h3 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
@@ -14,7 +17,9 @@ export function RequirementsList({ requirements, description }: RequirementsList
 
       {/* Description */}
       <div className="mb-6">
-        <h4 className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">Description</h4>
+        <h4 className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Description
+        </h4>
         <p className="text-zinc-600 dark:text-zinc-400">{description}</p>
       </div>
 
@@ -25,8 +30,8 @@ export function RequirementsList({ requirements, description }: RequirementsList
             Requirements
           </h4>
           <ul className="space-y-2">
-            {requirements.map((requirement, index) => (
-              <li key={index} className="flex items-start gap-3">
+            {requirements.map((requirement) => (
+              <li key={requirement} className="flex items-start gap-3">
                 <div className="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#089ec3]/10">
                   <svg
                     className="h-3 w-3 text-[#089ec3]"

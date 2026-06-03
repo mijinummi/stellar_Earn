@@ -14,7 +14,7 @@ import {
   parseCookies,
   verifyCsrfToken,
 } from '../utils/security.utils';
-
+//jjjj
 @Injectable()
 export class CsrfGuard implements CanActivate {
   private readonly logger = new Logger(CsrfGuard.name);
@@ -37,7 +37,7 @@ export class CsrfGuard implements CanActivate {
       return true;
     }
 
-    const securityContext = (request.res?.locals?.securityContext || {}) as {
+    const securityContext = (request.res.locals?.securityContext || {}) as {
       signatureVerified?: boolean;
     };
     if (securityContext.signatureVerified) {

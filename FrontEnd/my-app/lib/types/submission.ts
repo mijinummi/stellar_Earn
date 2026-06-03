@@ -1,35 +1,39 @@
-export enum SubmissionStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  PAID = 'PAID',
-  UNDER_REVIEW = 'UNDER_REVIEW',
-}
+import type { SubmissionResponse } from './api.types';
+import type { Quest } from './quest';
 
-export interface Quest {
-  id: string;
-  title: string;
-  description: string;
-  rewardAmount: number;
-  rewardAsset: string;
-  deadline?: string;
-  status?: string;
-}
+export const SubmissionStatus = {
+  PENDING: 'Pending',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  PAID: 'Paid',
+  UNDER_REVIEW: 'Under Review',
+} as const;
 
-export interface Submission {
+export type SubmissionStatus =
+  | 'Pending'
+  | 'Approved'
+  | 'Rejected'
+  | 'Paid'
+  | 'Under Review';
+
+export type ApiSubmissionStatus = SubmissionStatus;
+
+export interface Submission extends Omit<
+  Partial<SubmissionResponse>,
+  'status' | 'proof'
+> {
   id: string;
   questId: string;
   userId: string;
-  status: SubmissionStatus;
-  proof: Record<string, unknown>;
-  rejectionReason?: string;
+  status: ApiSubmissionStatus;
   createdAt: string;
   updatedAt: string;
-  quest: Quest;
+  quest?: Partial<Quest> & SubmissionResponse['quest']; // Made optional to match SubmissionResponse
+  proof: Record<string, unknown>;
 }
 
 export interface SubmissionFilters {
-  status?: SubmissionStatus;
+  status?: SubmissionStatus | ApiSubmissionStatus;
 }
 
 export interface PaginationParams {

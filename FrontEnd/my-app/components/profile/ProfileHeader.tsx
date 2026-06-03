@@ -4,9 +4,9 @@ import { useState } from 'react';
 import type { UserProfile } from '@/lib/types/profile';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/notifications/useToast';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 import OptimizedImage from '@/components/ui/OptimizedImage';
-
 
 interface ProfileHeaderProps {
   profile: UserProfile;
@@ -21,7 +21,7 @@ export function ProfileHeader({
   isLoading,
   onFollow,
   onUnfollow,
-  onEdit
+  onEdit,
 }: ProfileHeaderProps) {
   const { success, error: toastError } = useToast();
   const [isFollowing, setIsFollowing] = useState(profile?.isFollowing || false);
@@ -54,14 +54,14 @@ export function ProfileHeader({
         <div className="flex flex-col md:flex-row items-center gap-6">
           {/* Avatar skeleton */}
           <div className="flex-shrink-0">
-            <div className="w-24 h-24 rounded-full bg-zinc-800 animate-pulse" />
+            <Skeleton.Text className="w-24 h-24 rounded-full" />
           </div>
 
           {/* Info skeleton */}
           <div className="flex-1 w-full">
-            <div className="h-8 bg-zinc-800 rounded w-1/3 mb-2 animate-pulse" />
-            <div className="h-4 bg-zinc-800 rounded w-1/4 mb-4 animate-pulse" />
-            <div className="h-4 bg-zinc-800 rounded w-2/3 animate-pulse" />
+            <Skeleton.Text className="h-8 w-1/3 mb-2" />
+            <Skeleton.Text className="h-4 w-1/4 mb-4" />
+            <Skeleton.Text className="h-4 w-2/3" />
           </div>
         </div>
       </div>
@@ -102,11 +102,15 @@ export function ProfileHeader({
 
             {!profile.isOwnProfile && (
               <Button
-                variant={isFollowing ? "outline" : "default"}
+                variant={isFollowing ? 'outline' : 'default'}
                 size="sm"
                 onClick={handleFollow}
                 disabled={followLoading}
-                className={isFollowing ? "border-zinc-600 text-zinc-300 hover:bg-zinc-800" : ""}
+                className={
+                  isFollowing
+                    ? 'border-zinc-600 text-zinc-300 hover:bg-zinc-800'
+                    : ''
+                }
               >
                 {followLoading ? (
                   <span className="flex items-center gap-2">
@@ -122,11 +126,7 @@ export function ProfileHeader({
             )}
 
             {profile.isOwnProfile && onEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onEdit}
-              >
+              <Button variant="outline" size="sm" onClick={onEdit}>
                 Edit Profile
               </Button>
             )}
@@ -143,13 +143,14 @@ export function ProfileHeader({
           </div>
 
           {profile.bio && (
-            <p className="text-zinc-300 max-w-2xl">
-              {profile.bio}
-            </p>
+            <p className="text-zinc-300 max-w-2xl">{profile.bio}</p>
           )}
 
           <div className="mt-3 text-xs text-zinc-500">
-            Joined {new Date(profile.joinDate).toLocaleDateString()}
+            Joined{' '}
+            {profile.joinDate
+              ? new Date(profile.joinDate).toLocaleDateString()
+              : 'N/A'}
           </div>
         </div>
       </div>
@@ -158,11 +159,15 @@ export function ProfileHeader({
       <div className="mt-6 pt-6 border-t border-zinc-800">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
-            <div className="text-xl font-bold text-white">{profile.questsCompleted}</div>
+            <div className="text-xl font-bold text-white">
+              {profile.questsCompleted}
+            </div>
             <div className="text-xs text-zinc-400">Quests Completed</div>
           </div>
           <div>
-            <div className="text-xl font-bold text-white">{profile.xp.toLocaleString()}</div>
+            <div className="text-xl font-bold text-white">
+              {profile.xp.toLocaleString()}
+            </div>
             <div className="text-xs text-zinc-400">Total XP</div>
           </div>
           <div>
@@ -172,7 +177,9 @@ export function ProfileHeader({
             <div className="text-xs text-zinc-400">Earned</div>
           </div>
           <div>
-            <div className="text-xl font-bold text-white">{profile.currentStreak}</div>
+            <div className="text-xl font-bold text-white">
+              {profile.currentStreak}
+            </div>
             <div className="text-xs text-zinc-400">Day Streak</div>
           </div>
         </div>

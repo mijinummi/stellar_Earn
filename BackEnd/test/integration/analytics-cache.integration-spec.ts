@@ -8,6 +8,7 @@ import {
   AnalyticsService,
   getAnalyticsService,
 } from '#src/modules/analytics/analytics.service';
+import { AnalyticsService } from '#src/modules/analytics/analytics.service';
 import { CacheService } from '#src/modules/cache/cache.service';
 import { User } from '#src/modules/users/entities/user.entity';
 import { Quest } from '#src/modules/quests/entities/quest.entity';
@@ -43,6 +44,7 @@ describe('Analytics-Cache Integration', () => {
     }).compile();
 
     analyticsService = getAnalyticsService();
+    analyticsService = module.get<AnalyticsService>(AnalyticsService);
     cacheService = module.get<CacheService>(CacheService);
   });
 
@@ -234,4 +236,5 @@ describe('Analytics-Cache Integration', () => {
       }
     });
   });
+});
 });

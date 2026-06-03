@@ -27,8 +27,19 @@ import type {
   QuestQueryParams,
 } from '@/lib/types/api.types';
 
+const QUEST_LIST_TTL_MS = 3 * 60 * 1000;
+const QUEST_LIST_STALE_TTL_MS = 10 * 60 * 1000;
+
+type QuestListCacheOptions = {
+  onRevalidate?: (data: PaginatedQuestsResponse) => void;
+};
+
 // Re-export legacy types for backward compatibility with existing hooks
-export type { QuestFilters, PaginationParams, PaginatedResponse } from '@/lib/types/quest';
+export type {
+  QuestFilters,
+  PaginationParams,
+  PaginatedResponse,
+} from '@/lib/types/quest';
 
 // ---------------------------------------------------------------------------
 // List quests
@@ -36,19 +47,34 @@ export type { QuestFilters, PaginationParams, PaginatedResponse } from '@/lib/ty
 
 /**
  * Fetch quests with optional filters and pagination.
+ * Results are cached for 3 minutes with automatic request deduplication.
+ * Multiple simultaneous requests with identical parameters will share the same network call.
  * Retries up to 3 times on transient failures.
  */
 export async function getQuests(
   filters?: QuestQueryParams,
   cancelToken?: CancelToken,
+  timeout?: number,
+  cacheOptions?: QuestListCacheOptions
 ): Promise<PaginatedQuestsResponse> {
   const params = buildQuestParams(filters);
+  const cacheKey = `${generateQuestsCacheKey(params)}${timeout ? `:t-${timeout}` : ''}`;
 
-  return withRetry(() =>
-    get<PaginatedQuestsResponse>('/quests', {
-      params,
-      signal: cancelToken?.signal,
-    }),
+  return cacheManager.getStaleWhileRevalidate(
+    cacheKey,
+    () =>
+      withRetry(() =>
+        get<PaginatedQuestsResponse>('/quests', {
+          params,
+          signal: cancelToken?.signal,
+          timeout,
+        })
+      ),
+    {
+      ttl: QUEST_LIST_TTL_MS,
+      staleTtl: QUEST_LIST_STALE_TTL_MS,
+      onRevalidate: cacheOptions?.onRevalidate,
+    }
   );
 }
 
@@ -62,7 +88,7 @@ export async function getQuests(
  */
 export async function getQuestById(
   id: string,
-  cancelToken?: CancelToken,
+  cancelToken?: CancelToken
 ): Promise<QuestResponse> {
   return cacheManager.get(
     `quest-${id}`,
@@ -70,9 +96,9 @@ export async function getQuestById(
       withRetry(() =>
         get<QuestResponse>(`/quests/${id}`, {
           signal: cancelToken?.signal,
-        }),
+        })
       ),
-    60_000,
+    60_000
   );
 }
 
@@ -81,7 +107,7 @@ export async function getQuestById(
 // ---------------------------------------------------------------------------
 
 export async function createQuest(
-  payload: CreateQuestRequest,
+  payload: CreateQuestRequest
 ): Promise<QuestResponse> {
   const result = await post<QuestResponse>('/quests', payload);
   // Invalidate list cache (no simple key, so just clear all quest entries)
@@ -95,7 +121,7 @@ export async function createQuest(
 
 export async function updateQuest(
   id: string,
-  payload: UpdateQuestRequest,
+  payload: UpdateQuestRequest
 ): Promise<QuestResponse> {
   const result = await patch<QuestResponse>(`/quests/${id}`, payload);
   cacheManager.invalidate(`quest-${id}`);
@@ -115,8 +141,25 @@ export async function deleteQuest(id: string): Promise<void> {
 // Utility
 // ---------------------------------------------------------------------------
 
+/**
+ * Generate a cache key from quest query parameters.
+ * Serializes all filter parameters to create a unique key for caching.
+ * Undefined values are excluded to avoid collision between different filter states.
+ */
+function generateQuestsCacheKey(
+  params: Record<string, string | number | undefined>
+): string {
+  const filteredParams = Object.entries(params)
+    .filter(([, value]) => value !== undefined)
+    .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('&');
+
+  return `quests-list:${filteredParams || 'default'}`;
+}
+
 function buildQuestParams(
-  filters?: QuestQueryParams,
+  filters?: QuestQueryParams
 ): Record<string, string | number | undefined> {
   if (!filters) return {};
   return {

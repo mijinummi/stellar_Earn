@@ -4,11 +4,13 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { PayoutsController } from './payouts.controller';
 import { PayoutsService } from './payouts.service';
 import { Payout } from './entities/payout.entity';
+import { FraudRiskRulesService } from './services/fraud-risk-rules.service';
+import { QuotaModule } from '../quota/quota.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Payout]), ScheduleModule.forRoot()],
+  imports: [TypeOrmModule.forFeature([Payout]), ScheduleModule.forRoot(), QuotaModule],
   controllers: [PayoutsController],
-  providers: [PayoutsService],
-  exports: [PayoutsService],
+  providers: [PayoutsService, FraudRiskRulesService],
+  exports: [PayoutsService, FraudRiskRulesService],
 })
 export class PayoutsModule {}

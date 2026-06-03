@@ -1,6 +1,21 @@
-export type QuestStatus = 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
-export type QuestDifficulty = 'beginner' | 'intermediate' | 'advanced' | 'expert';
-export type QuestCategory = 'Development' | 'Blockchain' | 'Documentation' | 'Design' | 'Testing' | 'Community';
+export type QuestStatus =
+  | 'draft'
+  | 'active'
+  | 'paused'
+  | 'completed'
+  | 'cancelled';
+export type QuestDifficulty =
+  | 'beginner'
+  | 'intermediate'
+  | 'advanced'
+  | 'expert';
+export type QuestCategory =
+  | 'Development'
+  | 'Blockchain'
+  | 'Documentation'
+  | 'Design'
+  | 'Testing'
+  | 'Community';
 
 export interface Quest {
   id: string;

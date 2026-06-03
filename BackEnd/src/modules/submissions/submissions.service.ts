@@ -14,6 +14,7 @@ import { RejectSubmissionDto } from './dto/reject-submission.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { Quest } from '../quests/entities/quest.entity';
 import { User } from '../users/entities/user.entity';
+import { MetricsService } from '../../common/services/metrics.service';
 
 interface QuestVerifier {
   id: string;
@@ -29,7 +30,6 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { QuestCompletedEvent } from '../../events/dto/quest-completed.event';
 import { SubmissionRejectedEvent } from '../../events/dto/submission-rejected.event';
 import { SubmissionApprovedEvent } from '../../events/dto/submission-approved.event';
-import { SubmissionReceivedEvent } from '../../events/dto/submission-received.event';
 
 @Injectable()
 export class SubmissionsService {
@@ -39,6 +39,7 @@ export class SubmissionsService {
     // private stellarService: StellarService,
     private notificationsService: NotificationsService,
     private eventEmitter: EventEmitter2,
+    private metricsService: MetricsService,
   ) { }
 
   /**
@@ -49,8 +50,11 @@ export class SubmissionsService {
     approveDto: ApproveSubmissionDto,
     verifierId: string,
   ): Promise<Submission> {
+    // Eager-load the quest and user relations in a single JOINed query
+    // instead of issuing two extra round-trips after the initial lookup.
     const submission = await this.submissionsRepository.findOne({
       where: { id: submissionId },
+      withDeleted: false,
     });
 
     if (!submission) {
@@ -59,30 +63,24 @@ export class SubmissionsService {
       );
     }
 
-    // Load related quest and user separately
-    const quest = await this.getQuestById(submission.questId);
-    const user = await this.getUserById(submission.userId);
+    const quest = submission.quest as Quest;
+    const user = submission.user as User;
 
-    // Create a temporary object with relations
-    const submissionWithRelations = {
-      ...submission,
-      quest,
-      user,
-    };
+    await this.validateVerifierAuthorization(quest.id, verifierId);
+    this.validateStatusTransition(submission.status, 'APPROVED');
 
-    await this.validateVerifierAuthorization(
-      submissionWithRelations.quest.id,
-      verifierId,
-    );
-    this.validateStatusTransition(submissionWithRelations.status, 'APPROVED');
-
+    const approvedAt = new Date();
+    
+    // Calculate review duration for SLA tracking
+    const reviewDurationSeconds = (approvedAt.getTime() - submission.createdAt.getTime()) / 1000;
+    
     const updateResult = await this.submissionsRepository
       .createQueryBuilder()
       .update(Submission)
       .set({
         status: 'APPROVED',
         approvedBy: verifierId,
-        approvedAt: new Date(),
+        approvedAt,
         verifierNotes: approveDto.notes,
       })
       .where('id = :id', { id: submissionId })
@@ -101,15 +99,11 @@ export class SubmissionsService {
       );
     }
 
-    // const stellarAddress = this.requireStellarAddress(
-    //   submissionWithRelations.user,
-    // );
-
     try {
       // await this.stellarService.approveSubmission(
-      //   submissionWithRelations.quest.contractTaskId,
-      //   stellarAddress,
-      //   submissionWithRelations.quest.rewardAmount,
+      //   quest.contractTaskId,
+      //   user.stellarAddress,
+      //   quest.rewardAmount,
       // );
     } catch (error) {
       await this.submissionsRepository.update(submissionId, {
@@ -124,67 +118,53 @@ export class SubmissionsService {
       );
     }
 
-    const updatedSubmission = await this.submissionsRepository.findOne({
-      where: { id: submissionId },
-    });
-
-    if (!updatedSubmission) {
-      throw new NotFoundException('Submission not found after update');
+    // Apply the persisted changes to the in-memory entity instead of
+    // re-fetching the submission and its relations from the database.
+    submission.status = 'APPROVED';
+    submission.approvedBy = verifierId;
+    submission.approvedAt = approvedAt;
+    if (approveDto.notes !== undefined) {
+      submission.verifierNotes = approveDto.notes;
     }
 
-    // Load related quest and user separately for the updated submission
-    const updatedQuest = await this.getQuestById(updatedSubmission.questId);
-    const updatedUser = await this.getUserById(updatedSubmission.userId);
-
-    // Create a temporary object with relations
-    const updatedSubmissionWithRelations = {
-      ...updatedSubmission,
-      quest: updatedQuest,
-      user: updatedUser,
-    };
-
     await this.notificationsService.sendSubmissionApproved(
-      updatedSubmission.userId,
-      updatedSubmissionWithRelations.quest.title,
-      updatedSubmissionWithRelations.quest.rewardAmount,
+      submission.userId,
+      quest.title,
+      quest.rewardAmount,
     );
 
-    // Emit submission approved event
     this.eventEmitter.emit(
       'submission.approved',
-      new SubmissionApprovedEvent(submissionId, updatedSubmission.questId, verifierId),
+      new SubmissionApprovedEvent(submissionId, submission.questId, verifierId),
     );
 
-    // Emit quest completed event
     this.eventEmitter.emit(
       'quest.completed',
       new QuestCompletedEvent(
-        updatedSubmissionWithRelations.quest.id,
-        updatedSubmission.userId,
+        quest.id,
+        submission.userId,
         100, // XP increment
-        updatedSubmissionWithRelations.quest.rewardAmount.toString(),
+        quest.rewardAmount.toString(),
       ),
     );
 
-    // Emit submission approved event
     this.eventEmitter.emit('submission.approved', {
       submissionId,
-      questId: updatedSubmission.questId,
-      userId: updatedSubmission.userId,
+      questId: submission.questId,
+      userId: submission.userId,
       approvedBy: verifierId,
-      approvedAt: new Date(),
+      approvedAt,
     });
 
-    return updatedSubmission;
-  }
+    // Emit SLA metrics for submission review time
+    this.metricsService.incrementCounter('submission_review_total');
+    this.metricsService.incrementCounter('submission_approval_total');
+    this.metricsService.observeHistogram('submission_review_duration_seconds', reviewDurationSeconds, {
+      status: 'approved',
+      quest_id: submission.questId,
+    });
 
-  private requireStellarAddress(user: User): string {
-    if (!user.stellarAddress) {
-      throw new BadRequestException(
-        'User does not have a Stellar address linked',
-      );
-    }
-    return user.stellarAddress;
+    return submission;
   }
 
   /**
@@ -195,8 +175,12 @@ export class SubmissionsService {
     rejectDto: RejectSubmissionDto,
     verifierId: string,
   ): Promise<Submission> {
+    // Eager-load the quest and user relations in a single JOINed query
+    // instead of issuing two extra round-trips after the initial lookup.
     const submission = await this.submissionsRepository.findOne({
+      withDeleted: false,
       where: { id: submissionId },
+      relations: ['quest', 'user'],
     });
 
     if (!submission) {
@@ -205,34 +189,27 @@ export class SubmissionsService {
       );
     }
 
-    // Load related quest and user separately
-    const quest = await this.getQuestById(submission.questId);
-    const user = await this.getUserById(submission.userId);
+    const quest = submission.quest as Quest;
 
-    // Create a temporary object with relations
-    const submissionWithRelations = {
-      ...submission,
-      quest,
-      user,
-    };
-
-    await this.validateVerifierAuthorization(
-      submissionWithRelations.quest.id,
-      verifierId,
-    );
-    this.validateStatusTransition(submissionWithRelations.status, 'REJECTED');
+    await this.validateVerifierAuthorization(quest.id, verifierId);
+    this.validateStatusTransition(submission.status, 'REJECTED');
 
     if (!rejectDto.reason || rejectDto.reason.trim().length === 0) {
       throw new BadRequestException('Rejection reason is required');
     }
 
+    const rejectedAt = new Date();
+    
+    // Calculate review duration for SLA tracking
+    const reviewDurationSeconds = (rejectedAt.getTime() - submission.createdAt.getTime()) / 1000;
+    
     const updateResult = await this.submissionsRepository
       .createQueryBuilder()
       .update(Submission)
       .set({
         status: 'REJECTED',
         rejectedBy: verifierId,
-        rejectedAt: new Date(),
+        rejectedAt,
         rejectionReason: rejectDto.reason,
         verifierNotes: rejectDto.notes,
       })
@@ -246,42 +223,40 @@ export class SubmissionsService {
       );
     }
 
-    const updatedSubmission = await this.submissionsRepository.findOne({
-      where: { id: submissionId },
-    });
-
-    if (!updatedSubmission) {
-      throw new NotFoundException('Submission not found after update');
+    // Apply the persisted changes to the in-memory entity instead of
+    // re-fetching the submission and its relations from the database.
+    submission.status = 'REJECTED';
+    submission.rejectedBy = verifierId;
+    submission.rejectedAt = rejectedAt;
+    submission.rejectionReason = rejectDto.reason;
+    if (rejectDto.notes !== undefined) {
+      submission.verifierNotes = rejectDto.notes;
     }
 
-    // Load related quest and user separately for the updated submission
-    const updatedQuest = await this.getQuestById(updatedSubmission.questId);
-    const updatedUser = await this.getUserById(updatedSubmission.userId);
-
-    // Create a temporary object with relations
-    const updatedSubmissionWithRelations = {
-      ...updatedSubmission,
-      quest: updatedQuest,
-      user: updatedUser,
-    };
-
     await this.notificationsService.sendSubmissionRejected(
-      updatedSubmission.userId,
-      updatedSubmissionWithRelations.quest.title,
+      submission.userId,
+      quest.title,
       rejectDto.reason,
     );
 
-    // Emit submission rejected event
     this.eventEmitter.emit(
       'submission.rejected',
       new SubmissionRejectedEvent(
         submissionId,
-        updatedSubmission.userId,
+        submission.userId,
         rejectDto.reason,
       ),
     );
 
-    return updatedSubmission;
+    // Emit SLA metrics for submission review time
+    this.metricsService.incrementCounter('submission_review_total');
+    this.metricsService.incrementCounter('submission_rejection_total');
+    this.metricsService.observeHistogram('submission_review_duration_seconds', reviewDurationSeconds, {
+      status: 'rejected',
+      quest_id: submission.questId,
+    });
+
+    return submission;
   }
 
   private async validateVerifierAuthorization(
@@ -349,28 +324,12 @@ export class SubmissionsService {
   }
 
   async findByQuest(questId: string): Promise<Submission[]> {
+    // Join quest and user up front so the controller (which serialises both
+    // relations) doesn't trigger lazy lookups per row.
     return this.submissionsRepository.find({
       where: { questId },
+      relations: ['quest', 'user'],
       order: { createdAt: 'DESC' },
     });
-  }
-
-  // Helper methods to load related entities
-  private async getQuestById(questId: string): Promise<Quest> {
-    const questRepo = this.submissionsRepository.manager.getRepository(Quest);
-    const quest = await questRepo.findOne({ where: { id: questId } });
-    if (!quest) {
-      throw new NotFoundException(`Quest with ID ${questId} not found`);
-    }
-    return quest;
-  }
-
-  private async getUserById(userId: string): Promise<User> {
-    const userRepo = this.submissionsRepository.manager.getRepository(User);
-    const user = await userRepo.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
-    return user;
   }
 }

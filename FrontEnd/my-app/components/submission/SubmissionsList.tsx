@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { SubmissionCard } from './SubmissionCard';
 import type { Submission } from '@/lib/types/submission';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -36,8 +37,8 @@ function EmptyState() {
         No submissions found
       </h3>
       <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-        You haven&apos;t submitted any quests yet. Start completing quests to see
-        your submissions here.
+        You haven&apos;t submitted any quests yet. Start completing quests to
+        see your submissions here.
       </p>
     </div>
   );
@@ -70,7 +71,7 @@ function ErrorState({ error }: { error: Error }) {
   );
 }
 
-export function SubmissionsList({
+export const SubmissionsList = memo(function SubmissionsList({
   submissions,
   isLoading,
   error,
@@ -99,4 +100,6 @@ export function SubmissionsList({
       ))}
     </div>
   );
-}
+});
+
+SubmissionsList.displayName = 'SubmissionsList';
