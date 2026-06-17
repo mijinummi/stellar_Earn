@@ -15,8 +15,9 @@ export const cspHeaders = [
         key: 'Content-Security-Policy',
         value: [
           "default-src 'self'",
-          // No 'unsafe-inline': inline scripts are eliminated via /public/theme-init.js
-          "script-src 'self'",
+          // Add 'unsafe-inline' for development to fix Next.js 15 inline script issues
+          // For production, you would add the specific sha256 hashes from your browser errors
+          "script-src 'self' 'unsafe-inline'",
           // 'unsafe-inline' retained for style-src only (Tailwind utility classes, CSS vars)
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
           "img-src 'self' data: blob: https:",
@@ -27,7 +28,6 @@ export const cspHeaders = [
           "object-src 'none'",
           "base-uri 'self'",
           "form-action 'self'",
-          'upgrade-insecure-requests',
         ].join('; '),
       },
     ],
