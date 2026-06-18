@@ -1,4 +1,4 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
@@ -193,10 +193,7 @@ describe('Quests (e2e)', () => {
         .set('Authorization', `Bearer ${adminAccessToken}`)
         .send(createQuestDto)
         .expect(201)
-        .expect((res) => {
-
-
-        });
+        .expect((res) => {});
     });
 
     it('should reject quest with end date before start date', () => {
