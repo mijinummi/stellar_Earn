@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 import { cspHeaders } from './next.config.csp';
 import withBundleAnalyzer from '@next/bundle-analyzer';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const withAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -13,4 +14,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withAnalyzer(nextConfig);
+export default withSentryConfig(withAnalyzer(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  silent: process.env.CI === 'true',
+});

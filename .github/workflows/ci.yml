@@ -159,6 +159,35 @@ jobs:
       - name: Run orphaned scripts check
         run: node scripts/check-orphaned-scripts.js
 
+  frontend-build:
+    name: Frontend Build and Sentry Source Maps
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: FrontEnd/my-app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: FrontEnd/my-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and upload source maps to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+        run: npm run build
+
   contract-checks-gate:
     name: Contract Checks Gate
     runs-on: ubuntu-latest
