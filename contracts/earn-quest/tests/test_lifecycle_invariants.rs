@@ -242,7 +242,7 @@ fn pending_submission_cannot_be_claimed() {
     let (qid, _creator, _verifier) = register_quest(&ctx, symbol_short!("QP"));
     let submitter = submit(&ctx, &qid);
 
-    let result = ctx.client.try_claim_reward(&quest_id, &submitter, &100i128);
+    let result = ctx.client.try_claim_reward(&qid, &submitter, &100i128);
     assert!(result.is_err(), "claiming a pending submission must fail");
 }
 
