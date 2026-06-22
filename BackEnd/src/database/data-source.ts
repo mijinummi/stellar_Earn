@@ -15,6 +15,8 @@ import { FeatureFlag } from '../modules/feature-flags/entities/feature-flag.enti
 import { FeatureFlagAuditLog } from '../modules/feature-flags/entities/feature-flag-audit.entity';
 import { QuotaConfig } from '../modules/quota/entities/quota-config.entity';
 import { QuotaUsage } from '../modules/quota/entities/quota-usage.entity';
+import { EventStore } from '../events/entities/event-store.entity';
+import { PoisonMessage } from '../events/entities/poison-message.entity';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
@@ -101,6 +103,8 @@ export const dataSourceOptions: DataSourceOptions = {
     FeatureFlagAuditLog,
     QuotaConfig,
     QuotaUsage,
+    EventStore,
+    PoisonMessage,
   ],
 
   migrations: [path.join(__dirname, 'migrations', '*.{ts,js}')],

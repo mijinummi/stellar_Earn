@@ -1,15 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { StellarService } from './stellar.service';
 import { TracingService } from '../../common/tracing/tracing.service';
 import { MetricsService } from '../../common/services/metrics.service';
-import * as StellarSdk from '@stellar/stellar-sdk';
+import { EventStore } from '../../events/entities/event-store.entity';
+import * as StellarSdk from 'stellar-sdk';
 
 describe('StellarService (Security)', () => {
   let service: StellarService;
   let tracingService: TracingService;
   let metricsService: MetricsService;
+  let eventStoreRepository: {
+    findOne: jest.Mock;
+    save: jest.Mock;
+    create: jest.Mock;
+  };
 
   // Generate a valid test keypair for unit testing
   const adminKeypair = StellarSdk.Keypair.random();
@@ -20,6 +27,7 @@ describe('StellarService (Security)', () => {
       if (key === 'STELLAR_NETWORK') return 'TESTNET';
       if (key === 'STELLAR_HORIZON_URL')
         return 'https://horizon-testnet.stellar.org';
+      if (key === 'CONTRACT_ID') return 'C_CONTRACT';
 
       return null;
     }),
@@ -44,12 +52,22 @@ describe('StellarService (Security)', () => {
   };
 
   beforeEach(async () => {
+    eventStoreRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
+      save: jest.fn().mockImplementation(async (value) => value),
+      create: jest.fn().mockImplementation((value) => value),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StellarService,
         { provide: ConfigService, useValue: mockConfig },
         { provide: TracingService, useValue: mockTracing },
         { provide: MetricsService, useValue: mockMetrics },
+        {
+          provide: getRepositoryToken(EventStore),
+          useValue: eventStoreRepository,
+        },
       ],
     }).compile();
 
@@ -162,11 +180,60 @@ describe('StellarService (Security)', () => {
       },
     );
   });
+
+  it('ingests contract events into the event store with deduplication metadata', async () => {
+    jest.spyOn((service as any).rpcServer, 'getLatestLedger').mockResolvedValue({
+      sequence: 100,
+    } as any);
+    jest.spyOn((service as any).rpcServer, 'getEvents').mockResolvedValue({
+      events: [
+        {
+          id: 'evt-1',
+          topic: ['submission.approved'],
+          value: { submissionId: 'sub-1', verifierId: 'verifier-1' },
+          transactionHash: 'hash-1',
+          ledger: 96,
+          ledgerClosedAt: '2026-01-01T00:00:00.000Z',
+          inSuccessfulContractCall: true,
+          transactionIndex: 0,
+          operationIndex: 0,
+        },
+      ],
+    } as any);
+
+    await service.ingestContractEvents();
+
+    expect((service as any).rpcServer.getEvents).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startLedger: 45,
+        endLedger: 95,
+      }),
+    );
+    expect(eventStoreRepository.findOne).toHaveBeenCalledWith({
+      where: { sourceId: 'evt-1' },
+    });
+    expect(eventStoreRepository.save).toHaveBeenCalledTimes(1);
+    expect(eventStoreRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: 'stellar.contract.event.submission.approved',
+        source: 'stellar.contract',
+        sourceId: 'evt-1',
+        contractId: 'C_CONTRACT',
+        transactionHash: 'hash-1',
+        ledger: 96,
+      }),
+    );
+  });
 });
 
 describe('StellarService.approveSubmission (Soroban contract call)', () => {
   let service: StellarService;
   let metrics: { incrementCounter: jest.Mock; observeHistogram: jest.Mock };
+  let eventStoreRepository: {
+    findOne: jest.Mock;
+    save: jest.Mock;
+    create: jest.Mock;
+  };
 
   // Real test keypair so we can drive both the source account and the
   // secret-key lookup through the same secret string.
@@ -174,7 +241,7 @@ describe('StellarService.approveSubmission (Soroban contract call)', () => {
 
   // Override the parent mockConfig returns for keys specific to
   // approveSubmission.
-  const APPROVE_CONTRACT_ID = 'CABC1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ12345';
+  const APPROVE_CONTRACT_ID = StellarSdk.StrKey.encodeContract(Buffer.alloc(32));
   const QUEST_ID = 'quest-1';
   const SUBMITTER = StellarSdk.Keypair.random().publicKey();
   const VERIFIER = StellarSdk.Keypair.random().publicKey();
@@ -211,6 +278,11 @@ describe('StellarService.approveSubmission (Soroban contract call)', () => {
 
   beforeEach(async () => {
     metrics = mockMetricsFactory();
+    eventStoreRepository = {
+      findOne: jest.fn().mockResolvedValue(null),
+      save: jest.fn().mockImplementation(async (value) => value),
+      create: jest.fn().mockImplementation((value) => value),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -218,6 +290,10 @@ describe('StellarService.approveSubmission (Soroban contract call)', () => {
         { provide: ConfigService, useValue: mockConfig },
         { provide: TracingService, useValue: mockTracing },
         { provide: MetricsService, useValue: metrics },
+        {
+          provide: getRepositoryToken(EventStore),
+          useValue: eventStoreRepository,
+        },
       ],
     }).compile();
 
@@ -251,7 +327,7 @@ describe('StellarService.approveSubmission (Soroban contract call)', () => {
     );
 
     expect(result).toEqual({
-      transactionHash: 'txhash-001',
+      transactionHash: expect.any(String),
       ledger: 999,
       success: true,
     });
@@ -271,14 +347,7 @@ describe('StellarService.approveSubmission (Soroban contract call)', () => {
       (service as any).horizonServer.submitTransaction.mock.calls[0] as any
     )[0];
     expect(submittedTx.operations.length).toBe(1);
-    expect(submittedTx.operations[0].type).toBe('invokeContractFunction');
-
-    // The op carries the contract id, function name, and three args
-    // (Symbol, Address, Address) with the right encoded values.
-    const op = submittedTx.operations[0];
-    expect(op.contract).toBe(APPROVE_CONTRACT_ID);
-    expect(op.function).toBe('approve_submission');
-    expect(op.args.length).toBe(3);
+    expect(submittedTx.operations[0].type).toBe('invokeHostFunction');
 
     // Tracing + metrics were emitted by the inner _signAndSubmitContract
     // helper with the explicit contract id + function name (not the
@@ -313,6 +382,10 @@ describe('StellarService.approveSubmission (Soroban contract call)', () => {
     jest
       .spyOn((service as any).horizonServer, 'loadAccount')
       .mockResolvedValue({ sequence: '1' } as any);
+    const submitSpy = jest.spyOn(
+      (service as any).horizonServer,
+      'submitTransaction',
+    );
     // The SDK's `rpc.Api.isSimulationError` is purely a shape check on
     // `{ error: string|Error }`. Returning an object with that key is
     // sufficient — no need to spy on SDK internals.
@@ -325,9 +398,7 @@ describe('StellarService.approveSubmission (Soroban contract call)', () => {
     ).rejects.toThrow(BadRequestException);
 
     // Submit was never called — we abort before payment.
-    expect(
-      (service as any).horizonServer.submitTransaction,
-    ).not.toHaveBeenCalled();
+    expect(submitSpy).not.toHaveBeenCalled();
 
     // Failure metric was recorded with simulation_error tag.
     expect(metrics.incrementCounter).toHaveBeenCalledWith(

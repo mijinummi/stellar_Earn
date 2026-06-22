@@ -35,22 +35,22 @@ export class Submission {
   status: string;
 
   @Column({ nullable: true })
-  approvedBy: string;
+  approvedBy: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
-  approvedAt: Date;
+  approvedAt: Date | null;
 
   @Column({ nullable: true })
-  rejectedBy: string;
+  rejectedBy: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
-  rejectedAt: Date;
+  rejectedAt: Date | null;
 
   @Column({ nullable: true })
-  rejectionReason: string;
+  rejectionReason: string | null;
 
   @Column({ nullable: true })
-  verifierNotes: string;
+  verifierNotes: string | null;
 
   @Column({ type: 'varchar', length: 128, nullable: true })
   transactionHash: string | null;
