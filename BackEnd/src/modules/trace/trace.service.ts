@@ -9,7 +9,7 @@ import {
 import { TraceIdUtil } from './trace-id.util';
 
 /**
- * ExecutionTraceService manages the lifecycle of webhook-to-onchain execution
+ * TraceService manages the lifecycle of webhook-to-onchain execution
  * traces.  It provides a write-once, append-only record of every state
  * transition so that any on-call engineer can reconstruct exactly what happened
  * between an inbound webhook and the resulting Stellar ledger entry.
@@ -21,8 +21,8 @@ import { TraceIdUtil } from './trace-id.util';
  *   database; swap `this.store` for repository calls to productionise.
  */
 @Injectable()
-export class ExecutionTraceService {
-  private readonly logger = new Logger(ExecutionTraceService.name);
+export class TraceService {
+  private readonly logger = new Logger(TraceService.name);
   /** In-memory store.  Replace with a Prisma repository for production. */
   private readonly store = new Map<string, ExecutionTrace>();
 
@@ -170,7 +170,7 @@ export class ExecutionTraceService {
     const trace = this.store.get(traceId);
     if (!trace) {
       throw new NotFoundException(
-        `ExecutionTrace not found for traceId: ${traceId}`,
+        `Trace not found for traceId: ${traceId}`,
       );
     }
     return trace;

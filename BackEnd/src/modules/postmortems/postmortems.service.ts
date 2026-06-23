@@ -5,14 +5,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, ILike } from 'typeorm';
-import { PostmortemEntity, PostmortemStatus } from './postmortem.entity';
+import { PostmortemEntity, PostmortemStatus } from './postmortems.entity';
 import {
   CreatePostmortemDto,
   UpdatePostmortemDto,
   PostmortemResponseDto,
   PostmortemQueryDto,
   PostmortemStatsDto,
-} from './postmortem.dto';
+} from './dto/postmortem.dto';
 
 @Injectable()
 export class PostmortemService {

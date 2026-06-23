@@ -24,7 +24,7 @@ export interface ReputationAtomicSideEffects {
 }
 
 @Injectable()
-export class UserService {
+export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
@@ -154,5 +154,5 @@ export class UserService {
   }
 }
 
-// Backward-compatible alias for existing imports/tests that use UsersService.
-export class UsersService extends UserService {}
+// Backward-compatible alias for existing imports/tests that use UserService.
+export class UserService extends UsersService {}

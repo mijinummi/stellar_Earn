@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PostmortemEntity } from './postmortem.entity';
-import { PostmortemService } from './postmortem.service';
-import { PostmortemController } from './postmortem.controller';
+import { PostmortemEntity } from './postmortems.entity';
+import { PostmortemService } from './postmortems.service';
+import { PostmortemController } from './postmortems.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([PostmortemEntity])],
@@ -10,4 +10,4 @@ import { PostmortemController } from './postmortem.controller';
   controllers: [PostmortemController],
   exports: [PostmortemService],
 })
-export class PostmortemModule {}
+export class PostmortemsModule {}

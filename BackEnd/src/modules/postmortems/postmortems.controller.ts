@@ -9,14 +9,14 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { PostmortemService } from './postmortem.service';
+import { PostmortemService } from './postmortems.service';
 import {
   CreatePostmortemDto,
   UpdatePostmortemDto,
   PostmortemResponseDto,
   PostmortemQueryDto,
   PostmortemStatsDto,
-} from './postmortem.dto';
+} from './dto/postmortem.dto';
 
 @ApiTags('Postmortems')
 @Controller('postmortems')

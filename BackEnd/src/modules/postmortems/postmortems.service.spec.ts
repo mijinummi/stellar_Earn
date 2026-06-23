@@ -2,13 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PostmortemService } from './postmortem.service';
+import { PostmortemService } from './postmortems.service';
 import {
   PostmortemEntity,
   IncidentSeverity,
   PostmortemStatus,
-} from './postmortem.entity';
-import { CreatePostmortemDto, UpdatePostmortemDto } from './postmortem.dto';
+} from './postmortems.entity';
+import { CreatePostmortemDto, UpdatePostmortemDto } from './dto/postmortem.dto';
 
 describe('PostmortemService', () => {
   let service: PostmortemService;

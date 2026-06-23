@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PostmortemController } from './postmortem.controller';
-import { PostmortemService } from './postmortem.service';
+import { PostmortemController } from './postmortems.controller';
+import { PostmortemService } from './postmortems.service';
 import {
   CreatePostmortemDto,
   UpdatePostmortemDto,
   PostmortemResponseDto,
-} from './postmortem.dto';
-import { IncidentSeverity, PostmortemStatus } from './postmortem.entity';
+} from './dto/postmortem.dto';
+import { IncidentSeverity, PostmortemStatus } from './postmortems.entity';
 
 describe('PostmortemController', () => {
   let controller: PostmortemController;

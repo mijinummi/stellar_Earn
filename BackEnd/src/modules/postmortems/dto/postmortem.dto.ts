@@ -7,7 +7,7 @@ import {
   IsBoolean,
   IsDate,
 } from 'class-validator';
-import { IncidentSeverity, PostmortemStatus } from './postmortem.entity';
+import { IncidentSeverity, PostmortemStatus } from '../postmortems.entity';
 
 // Create/Update DTO
 export class CreatePostmortemDto {

@@ -5,7 +5,7 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
-import { ExecutionTraceService } from './execution-trace.service';
+import { TraceService } from './trace.service';
 import { ExecutionTrace } from './trace.types';
 
 /**
@@ -15,8 +15,8 @@ import { ExecutionTrace } from './trace.types';
  * unauthorized manipulation of trace state.
  */
 @Controller('traces')
-export class ExecutionTraceController {
-  constructor(private readonly traceService: ExecutionTraceService) {}
+export class TraceController {
+  constructor(private readonly traceService: TraceService) {}
 
   /**
    * GET /traces/:traceId
