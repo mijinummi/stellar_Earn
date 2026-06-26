@@ -69,7 +69,7 @@ export class Quest {
   @Column({ type: 'timestamp', nullable: true })
   endDate: Date;
 
-  @Column({ nullable: true, enum: QuestDifficulty })
+  @Column({ type: 'enum', enum: QuestDifficulty, nullable: true })
   difficulty: QuestDifficulty;
 
   @OneToMany('Submission', 'quest')
