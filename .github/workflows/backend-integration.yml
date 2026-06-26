@@ -57,6 +57,9 @@ jobs:
       REDIS_URL: redis://localhost:6379
       NODE_ENV: test
       JWT_SECRET: test-jwt-secret
+      JWT_PRIVATE_KEY: "dummy"
+      JWT_PUBLIC_KEY: "dummy"
+      STELLAR_MOCK_CURRENT_LEDGER: 60000000
       SOROBAN_SECRET_KEY: SAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
       STELLAR_NETWORK: testnet
       HORIZON_URL: https://horizon-testnet.stellar.org
